@@ -1,23 +1,62 @@
+import 'dart:developer';
+
 import 'package:get/get.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
-class HomeController extends GetxController {
-  //TODO: Implement HomeController
+import '../../../data/models/local_models/watchlist_model.dart';
+import '../../../data/models/network_models/company_model.dart';
+import '../../../data/services/network_services.dart/stock_watchlist_services.dart';
+import '../views/home_view.dart';
 
-  final count = 0.obs;
+class HomeController extends GetxController with StateMixin<HomeView> {
+  Rx<GlobalQuote> companyData = GlobalQuote().obs;
+  RxBool isLoading = false.obs;
+  RxBool isDataLoaded = false.obs;
+
+  late Box<WatchListModel> box;
+
   @override
-  void onInit() {
+  Future<void> onInit() async {
     super.onInit();
+    await openHiveBox();
   }
 
-  @override
-  void onReady() {
-    super.onReady();
+  Future<void> openHiveBox() async {
+    change(null, status: RxStatus.loading());
+    // Open the Hive box
+    box = await Hive.openBox<WatchListModel>('WATCH_LISTS');
+    change(null, status: RxStatus.success());
   }
 
-  @override
-  void onClose() {
-    super.onClose();
+  Future<void> searchCompanies(String query) async {
+    isLoading.value = true;
+    try {
+      final GlobalQuote? response =
+          await StockWatchListApi().fetchCompanyDetails(query);
+      log(response.toString());
+      if (response != null && response.s01Symbol != null) {
+        companyData.value = response;
+        isLoading.value = false;
+        isDataLoaded.value = true;
+        Get.snackbar('Success', 'Data Fetched');
+      } else {
+        isLoading.value = false;
+        isDataLoaded.value = false;
+      }
+    } catch (e) {
+      isDataLoaded.value = false;
+      isLoading.value = false;
+
+      log(e.toString());
+    }
   }
 
-  void increment() => count.value++;
+  Future<void> addDataToDb({required GlobalQuote data}) async {
+    final Box<WatchListModel> box = Hive.box<WatchListModel>('WATCH_LISTS');
+    final WatchListModel newData = WatchListModel()
+      ..companyName = data.s01Symbol ?? ''
+      ..sharePrice = data.s05Price ?? '';
+
+    await box.add(newData);
+  }
 }
