@@ -9,7 +9,7 @@ import '../../../data/services/network_services.dart/stock_watchlist_services.da
 import '../views/home_view.dart';
 
 class HomeController extends GetxController with StateMixin<HomeView> {
-  Rx<GlobalQuote> companyData = GlobalQuote().obs;
+  RxList<CompanyModel> companyData = <CompanyModel>[].obs;
   RxBool isLoading = false.obs;
   RxBool isDataLoaded = false.obs;
 
@@ -30,20 +30,23 @@ class HomeController extends GetxController with StateMixin<HomeView> {
 
   Future<void> searchCompanies(String query) async {
     isLoading.value = true;
+    log(query);
     try {
-      final GlobalQuote? response =
+      final List<CompanyModel>? response =
           await StockWatchListApi().fetchCompanyDetails(query);
-      log(response.toString());
-      if (response != null && response.s01Symbol != null) {
+
+      if (response != null && response.isNotEmpty) {
         companyData.value = response;
         isLoading.value = false;
         isDataLoaded.value = true;
         Get.snackbar('Success', 'Data Fetched');
       } else {
+        Get.snackbar('Failed', 'No Data {}');
         isLoading.value = false;
         isDataLoaded.value = false;
       }
     } catch (e) {
+      Get.snackbar('Failed', 'No Data {$e}');
       isDataLoaded.value = false;
       isLoading.value = false;
 
@@ -51,12 +54,22 @@ class HomeController extends GetxController with StateMixin<HomeView> {
     }
   }
 
-  Future<void> addDataToDb({required GlobalQuote data}) async {
+  Future<void> addDataToDb({required CompanyModel data}) async {
     final Box<WatchListModel> box = Hive.box<WatchListModel>('WATCH_LISTS');
+    box.values.toList();
     final WatchListModel newData = WatchListModel()
-      ..companyName = data.s01Symbol ?? ''
-      ..sharePrice = data.s05Price ?? '';
+      ..companyName = data.company ?? ''
+      ..sharePrice = data.symbol ?? '';
+    final List<WatchListModel> watchList = box.values.toList();
 
-    await box.add(newData);
+    final bool isDataExists = watchList.any((WatchListModel watchItem) =>
+        watchItem.companyName == data.company &&
+        watchItem.sharePrice == data.symbol);
+
+    if (!isDataExists) {
+      box.add(newData);
+    } else {
+      Get.snackbar('Failed to add storage', 'Item still exists');
+    }
   }
 }

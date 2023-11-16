@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:developer';
 
 import 'package:dio/dio.dart';
@@ -7,16 +8,26 @@ import '../../models/network_models/company_model.dart';
 class StockWatchListApi {
   Dio dio = Dio();
 
-  Future<GlobalQuote?> fetchCompanyDetails(String query) async {
+  Future<List<CompanyModel>?> fetchCompanyDetails(String query) async {
+    log('fetch Company');
     try {
-      final Response<dynamic> response = await dio.get(
-          'https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${query.trim().toUpperCase()}&apikey=HM76H03Y5JRCWJIB');
+      final response = await dio.get(
+          'https://dev.portal.tradebrains.in/api/search?keyword=${query.trim()}&apikey=HM76H03Y5JRCWJIB');
 
       log(response.toString());
+      log(response.statusCode.toString());
+      log(response.statusMessage.toString());
       if (response.statusCode == 200) {
-        final CompanyModel companyModel =
-            CompanyModel.fromJson(response.data as Map<String, dynamic>);
-        return companyModel.globalQuote!;
+        List<dynamic> res = response.data;
+
+        final List<CompanyModel> companyModel = res
+            .map((e) => CompanyModel.fromJson(e))
+            .cast<CompanyModel>()
+            .toList();
+
+        // final List<CompanyModel> companyModel =
+        //     CompanyModel.fromJson(response.data);
+        return companyModel;
       } else {
         return null;
       }

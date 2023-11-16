@@ -27,6 +27,7 @@ class HomeView extends GetView<HomeController> {
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: TextField(
+                    textInputAction: TextInputAction.done,
                     onSubmitted: (String value) async {
                       await controller.searchCompanies(value);
                     },
@@ -48,14 +49,19 @@ class HomeView extends GetView<HomeController> {
                       )
                     : const SizedBox()),
                 Obx(
-                  () => controller.companyData.value != null &&
+                  () => controller.companyData.isNotEmpty &&
                           controller.isDataLoaded.value
-                      ? CustomComPanyListTile(
-                          title: controller.companyData.value.s01Symbol ?? '',
-                          sharePrice:
-                              controller.companyData.value.s05Price ?? '',
-                          onTap: () => controller.addDataToDb(
-                              data: controller.companyData.value),
+                      ? ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: controller.companyData.length,
+                          itemBuilder: (context, index) =>
+                              CustomComPanyListTile(
+                            title: controller.companyData[index].company ?? '',
+                            sharePrice:
+                                controller.companyData[index].symbol ?? '',
+                            onTap: () => controller.addDataToDb(
+                                data: controller.companyData[index]),
+                          ),
                         )
                       : const SizedBox(),
                 ),

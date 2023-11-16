@@ -24,23 +24,31 @@ class WatchlistView extends GetView<WatchlistController> {
         (WatchlistView? state) => RefreshIndicator(
           onRefresh: controller.fetchDataFromLocal,
           child: Obx(() {
-            return controller.watchList.isEmpty
-                ? const Center(
-                    child: Text('No data found here'),
-                  )
-                : ListView.builder(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    itemCount: controller.watchList.length,
-                    itemBuilder: (BuildContext context, int index) {
-                      return CustomComPanyListTile(
-                        needAddButton: false,
-                        onTap: () => controller
-                            .deleteDataFromLocal(controller.watchList[index]),
-                        title: controller.watchList[index].companyName,
-                        sharePrice: controller.watchList[index].sharePrice,
-                      );
-                    },
+            if (controller.watchList.isEmpty) {
+              return ListView(
+                children: const <Widget>[
+                  Column(
+                    children: <Widget>[
+                      Center(child: Text('No data found here')),
+                    ],
+                  ),
+                ],
+              );
+            } else {
+              return ListView.builder(
+                physics: const AlwaysScrollableScrollPhysics(),
+                itemCount: controller.watchList.length,
+                itemBuilder: (BuildContext context, int index) {
+                  return CustomComPanyListTile(
+                    needAddButton: false,
+                    onTap: () => controller
+                        .deleteDataFromLocal(controller.watchList[index]),
+                    title: controller.watchList[index].companyName,
+                    sharePrice: controller.watchList[index].sharePrice,
                   );
+                },
+              );
+            }
           }),
         ),
       ),
